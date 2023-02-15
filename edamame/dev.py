@@ -1,5 +1,7 @@
 import colorsys
+import datetime
 import random
+from functools import lru_cache
 from math import cos, pi, sin
 
 import geopandas as gpd
@@ -34,7 +36,7 @@ def make_grid(shape, ngrid=40):
     # 関数の構造上、1つの領域に複数の点が含まれているかどうかを判定できない。
     # 1つの領域に対して1つの点が含まれているかどうかは判定できる。時間がかかるが、最初に一回だけ行えば良い処理なので黙認する。
     inside = np.array([land.contains(p) for p in points]).reshape(-1)
-    print(inside, sum(inside))
+    # print(inside, sum(inside))
     gX = gX[inside]
     gY = gY[inside]
     return gX, gY
@@ -210,3 +212,90 @@ def draw(target, h, ax, gX, gY, dfs, stations, vcolorify, shape):
         elems += perimeters(ax, shape)
 
         return elems
+
+
+#constants
+#J2K = 0.120273 # K/J 20110521 modified.
+MassMe = 16e-3 # kg/mol
+
+#Physical propertires
+kB   = 1.380662e-23 # J/K
+NA   = 6.022045e23  # 1
+J2K =  1.0/(kB*NA) # K/J
+NkB  = kB * NA * 1e-3 # kJ/mol/K
+h    = 6.626176e-34 # J s Planck's h
+cc   = 2.99792e10
+
+# use ABC values in NIST database
+# http://webbook.nist.gov/cgi/cbook.cgi?ID=C287923&Mask=4&Type=ANTOINE&Plot=on
+def VaporPressure(T, A=5.40221, B=1838.675, C=-31.737):  # in Pa
+    return 10.0**(A - B / (C + T)) * 101325.0
+
+
+@lru_cache
+def load(fn, drop=[]):
+    try:
+        df = pd.read_csv(fn)
+        if "TEMP" in df.columns:
+            df["TEMP"] = df["TEMP"] / 10
+        df["date"] = pd.to_datetime(df["date"])
+        # 日付けと、重複して積算している量(合計量)を排除する。
+        df.drop(df.columns[df.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
+
+        if "HUM" in df.columns:
+            df["Water"] = np.log(VaporPressure(df["TEMP"]+273.15)*df["HUM"]/100)
+            df = df.drop(columns=["HUM"])
+
+        for col in drop:
+            if col in df.columns:
+                df = df.drop(columns=col)
+
+        return df
+    except:
+        return None
+
+
+@lru_cache(maxsize=5000)
+def retrieve(location, date, hours=24, drop=tuple(), PATH=""):
+    """とりあえず、てもとのディスク上にあるデータを返すのみ。
+
+    Args:
+        location: location id (tenbou data)
+        date (_type_): year, month, day, and hour. (minutes and seconds are ignored)
+        span (int, optional): time span. 24 means that the oldest data should be 24 hours before the date. Defaults to 24.
+        drop (list of strings): あらかじめ削除しておくカラム
+    """
+    # 日付はここで使う。
+    drop0 = tuple([x for x in drop if x != "date"])
+
+    date = pd.Timestamp(date)
+    df = None
+    year = date.year
+    head = pd.Timestamp(date - datetime.timedelta(hours=hours))
+    pref = location // 1000000
+    while True:
+        fn=f"{PATH}{pref}/{year}/j{pref}{year}_{location}.csv"
+        # assert os.path.exists(fn), f"{fn} not found."
+        df1 = load(fn=fn, drop=drop0)
+        if df1 is None:
+            break
+        # 年がかわると、測定項目が変わる可能性がある。
+        # その場合は、項目が少ないほうにあわせる。
+        year -= 1
+        if df is None:
+            df = df1
+        else:
+            df = pd.concat((df, df1), ignore_index=True)
+        if df1 is not None and df1.iloc[0].loc["date"] < head:
+            break
+    if df is not None:
+        df = df[df["date"]>=head]
+        df = df[df["date"]<=date]
+
+        # 日付をとりのぞく。
+        if "date" in drop:
+            df = df.drop(columns="date")
+            return df
+
+        return df.sort_values(by="date")
+    return df
