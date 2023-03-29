@@ -12,7 +12,7 @@ from scipy.spatial import Delaunay
 from shapely.geometry import Point
 
 
-def make_grid(shape, ngrid=40):
+def make_grid(shape, ngrid=40, xrange=(139.0, 139.8), yrange=(35.1, 35.7)):
     # DataAnalysisフォルダー内での相対位置
     gdf3 = gpd.read_file(shape)
 
@@ -24,8 +24,8 @@ def make_grid(shape, ngrid=40):
 
 
     # 陸地内の格子点だけにする。
-    x = np.linspace(139.0, 139.8, ngrid)
-    y = np.linspace(35.1, 35.7, ngrid)
+    x = np.linspace(*xrange, ngrid)
+    y = np.linspace(*yrange, ngrid)
     gX, gY = np.meshgrid(x,y)
     gX = gX.reshape(-1)
     gY = gY.reshape(-1)
