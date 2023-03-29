@@ -12,7 +12,7 @@ long_desc = "".join(open("README.md").readlines())
 
 setup(
     name='edamame-dev', # the package name
-    version="0.3.2",
+    version="0.3.3",
     description='Edamame-kun.',
     long_description=long_desc,
     long_description_content_type="text/markdown",

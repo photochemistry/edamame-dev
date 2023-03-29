@@ -175,7 +175,7 @@ def draw(target, h, ax, gX, gY, dfs, stations, vcolorify, shape):
         e = ax.scatter(points[:,0], points[:,1], color=vcolorify((sZx**2+sZy**2)**0.5))
         elems.append(e)
         for df in dfs:
-            datestr = df.iloc[h]["date"]
+            datestr = dfs[df].iloc[h]["date"]
             break
         e = ax.set_title(datestr)
         elems.append(e)
