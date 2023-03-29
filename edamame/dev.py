@@ -212,6 +212,9 @@ def draw(target, h, ax, gX, gY, dfs, stations, vcolorify, shape):
         elems.append(e)
         e = ax.scatter(points[:,0], points[:,1], color=vcolorify(sZ), ec="#000")
         elems.append(e)
+        for df in dfs:
+            datestr = dfs[df].iloc[h]["date"]
+            break
         e = ax.set_title(datestr)
         elems.append(e)
         elems += perimeters(ax, shape)
