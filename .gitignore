@@ -1,2 +1,8 @@
 build/
 *.lock
+
+__pycache__
+*.egg-info
+*.lock
+*.pyc
+.DS_Store

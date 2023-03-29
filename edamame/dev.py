@@ -56,14 +56,15 @@ def perimeters(ax, shapefile):
     return elems
 
 
-def station_list(pref=14, year=2020, target="OX", PATH=""):
-    fn = f"{PATH}{pref}/{year}/TM{year}{pref:04d}.txt"
+def station_list(year=2020, target="OX", PATH=""):
+    fn = f"{PATH}TM{year}0000.txt"
     df = pd.read_csv(fn, encoding="ShiftJIS")
     return df[df[f'{target}_測定有無'].notna()]
 
 
 def station_info(pref=14, year=2020, target="OX", PATH=""):
-    df = station_list(pref=pref, year=year, target=target, PATH=PATH)
+    df = station_list(year=year, target=target, PATH=PATH)
+    df = df[df["都道府県コード"]==f"{pref:02d}"]
     df2 = df[["国環研局番", "８文字名", "標高(m)"]]
     # Warningが出るが、問題ないらしい。
     df2.loc[:, "latitude"] = df.loc[:, '緯度_度'] + df.loc[:, '緯度_分']/60 + df.loc[:, '緯度_秒']/3600
