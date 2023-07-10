@@ -5,6 +5,7 @@ from functools import lru_cache
 from math import cos, pi, sin
 
 import geopandas as gpd
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.interpolate as interp
@@ -240,6 +241,88 @@ def draw(target, h, ax, gX, gY, dfs, stations, vcolorify, shape=None):
             elems += perimeters(ax, shape)
 
         return elems
+
+
+def draw_with_wind(
+    target, h, ax, gX, gY, dfs, stations, minvalue, maxvalue, shape=None
+):
+    # 1. グリッド点の処理
+
+    interp, sX, sY, sZ = gridfunc(target, h, dfs, stations)
+    Z = interp(gX, gY)
+    # 内挿できなかった格子点を除外する。
+    X = gX[~np.isnan(Z)]
+    Y = gY[~np.isnan(Z)]
+    Z = Z[~np.isnan(Z)]
+
+    elems = []
+
+    # colors = vcolorify(Z)
+
+    e = ax.scatter(
+        X,
+        Y,
+        c=Z,
+        cmap=plt.cm.jet,
+        vmin=minvalue,
+        vmax=maxvalue,
+    )
+
+    # 2. 測定局の処理
+
+    # Compute Delaunay
+    points = np.array([sX, sY]).T
+    # 欠測を除く。
+    number = ~np.isnan(sZ)
+    points = points[number]
+    sZ = sZ[number]
+    tri = Delaunay(points)
+    e = ax.triplot(
+        points[:, 0],
+        points[:, 1],
+        tri.simplices,
+        color="#888",
+        linewidth=0.5,
+    )
+    elems.append(e)
+    e = ax.scatter(
+        points[:, 0],
+        points[:, 1],
+        c=sZ,
+        cmap=plt.cm.jet,
+        ec="#000",
+        vmin=minvalue,
+        vmax=maxvalue,
+    )
+    colored = e
+    elems.append(e)
+    for df in dfs:
+        datestr = dfs[df].iloc[h]["date"]
+        break
+    e = ax.set_title(datestr)
+    elems.append(e)
+    if shape is not None:
+        elems += perimeters(ax, shape)
+
+    # 風を重ねる
+
+    # 1. グリッド点の処理
+
+    ipx, ipy, sX, sY, sZx, sZy = gridfunc2D("WS", h, dfs, stations)
+    # gX, gYは県内のグリッド点、ipx, ipyは内挿関数
+    Zx = ipx(gX, gY)
+    Zy = ipy(gX, gY)
+    # 内挿できなかった格子点を除外する。
+    X = gX[~np.isnan(Zy)]
+    Y = gY[~np.isnan(Zy)]
+    Zx = Zx[~np.isnan(Zy)]
+    Zy = Zy[~np.isnan(Zy)]
+
+    e = ax.quiver(X, Y, Zx, Zy, color="k", width=0.002)
+
+    elems.append(e)
+
+    return elems, colored
 
 
 # constants
