@@ -1,7 +1,8 @@
 import colorsys
 import datetime
 import random
-from functools import lru_cache
+
+# from functools import lru_cache
 from math import cos, pi, sin
 
 import geopandas as gpd
@@ -334,7 +335,7 @@ def VaporPressure(T, A=5.40221, B=1838.675, C=-31.737):  # in Pa
     return 10.0 ** (A - B / (C + T)) * 101325.0
 
 
-@lru_cache
+# @lru_cache
 def load(fn, drop=[]):
     try:
         df = pd.read_csv(fn)
@@ -361,7 +362,7 @@ def load(fn, drop=[]):
         return None
 
 
-@lru_cache(maxsize=5000)
+# @lru_cache(maxsize=5000)
 def retrieve(location, date, hours=24, drop=tuple(), PATH=""):
     """とりあえず、てもとのディスク上にあるデータを返すのみ。
 
