@@ -31,9 +31,7 @@ def make_grid(shape, ngrid=40, xrange=(139.0, 139.8), yrange=(35.1, 35.7)):
     gY = gY.reshape(-1)
 
     # EPSGは座標系らしい。
-    points = gpd.GeoSeries([Point(x, y) for x, y in zip(gX, gY)]).set_crs(
-        epsg=6668
-    )
+    points = gpd.GeoSeries([Point(x, y) for x, y in zip(gX, gY)]).set_crs(epsg=6668)
 
     # 関数の構造上、1つの領域に複数の点が含まれているかどうかを判定できない。
     # 1つの領域に対して1つの点が含まれているかどうかは判定できる。時間がかかるが、最初に一回だけ行えば良い処理なので黙認する。
@@ -69,23 +67,19 @@ def station_info(pref=14, year=2020, target="OX", PATH=""):
     df = df[df["都道府県コード"] == pref]
     df2 = df[["国環研局番", "８文字名", "標高(m)"]]
     # Warningが出るが、問題ないらしい。
-    df2.loc[:, "latitude"] = (
-        df.loc[:, "緯度_度"] + df.loc[:, "緯度_分"] / 60 + df.loc[:, "緯度_秒"] / 3600
-    )
-    df2.loc[:, "longitude"] = (
+    df2.loc[:, "latitude"] = df["緯度_度"] + df["緯度_分"] / 60 + df["緯度_秒"] / 3600
+    df2["longitude"] = (
         df.loc[:, "経度_度"] + df.loc[:, "経度_分"] / 60 + df.loc[:, "経度_秒"] / 3600
     )
     df2 = df2.rename(columns={"８文字名": "name", "標高(m)": "altitude"})
     return df2.set_index("国環研局番").T.to_dict("dict")
 
 
-def colorify(v, min=0, max=240):
-    if v > max:
-        v = max
-    if v < min:
-        v = min
+def colorify(v, minv=0, maxv=240):
+    v = min(v, maxv)
+    v = max(v, minv)
     r, g, b = colorsys.hsv_to_rgb(
-        2 / 3 - (v - min) / (max - min) * (2 / 3), 1.0, 1.0
+        2 / 3 - (v - minv) / (maxv - minv) * (2 / 3), 1.0, 1.0
     )
     return f"#{int(r*255):02x}{int(g*255):02x}{int(b*255):02x}"
 
@@ -228,9 +222,7 @@ def draw(target, h, ax, gX, gY, dfs, stations, vcolorify, shape=None):
             linewidth=0.5,
         )
         elems.append(e)
-        e = ax.scatter(
-            points[:, 0], points[:, 1], color=vcolorify(sZ), ec="#000"
-        )
+        e = ax.scatter(points[:, 0], points[:, 1], color=vcolorify(sZ), ec="#000")
         elems.append(e)
         for df in dfs:
             datestr = dfs[df].iloc[h]["date"]
@@ -359,9 +351,7 @@ def load(fn, drop=[]):
         )
 
         if "HUM" in df.columns:
-            df["Water"] = np.log(
-                VaporPressure(df["TEMP"] + 273.15) * df["HUM"] / 100
-            )
+            df["Water"] = np.log(VaporPressure(df["TEMP"] + 273.15) * df["HUM"] / 100)
             df = df.drop(columns=["HUM"])
 
         for col in drop:
