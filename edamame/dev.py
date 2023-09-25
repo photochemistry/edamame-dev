@@ -67,7 +67,7 @@ def station_info(pref=14, year=2020, target="OX", PATH=""):
     df = df[df["都道府県コード"] == pref]
     df2 = df[["国環研局番", "８文字名", "標高(m)"]]
     # Warningが出るが、問題ないらしい。
-    df2.loc[:, "latitude"] = df["緯度_度"] + df["緯度_分"] / 60 + df["緯度_秒"] / 3600
+    df2.loc[:, ("latitude",)] = df["緯度_度"] + df["緯度_分"] / 60 + df["緯度_秒"] / 3600
     df2["longitude"] = (
         df.loc[:, "経度_度"] + df.loc[:, "経度_分"] / 60 + df.loc[:, "経度_秒"] / 3600
     )
